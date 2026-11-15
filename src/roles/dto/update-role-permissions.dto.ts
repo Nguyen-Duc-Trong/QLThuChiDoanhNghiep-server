@@ -1,8 +1,8 @@
-import { IsArray, IsEnum } from 'class-validator';
-import { Permission } from '../../common/types.js';
+import { IsArray, IsIn } from 'class-validator';
+import { ALL_PERMISSIONS, type Permission } from '../../permissions/permission-catalog.js';
 
 export class UpdateRolePermissionsDto {
   @IsArray({ message: 'permissions phải là một mảng' })
-  @IsEnum(Permission, { each: true, message: 'Quyền không hợp lệ' })
+  @IsIn(ALL_PERMISSIONS, { each: true, message: 'Quyền không hợp lệ' })
   permissions: Permission[];
 }

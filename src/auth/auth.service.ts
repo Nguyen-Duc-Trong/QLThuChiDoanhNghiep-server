@@ -15,6 +15,7 @@ import { RedisService } from '../redis/redis.service.js';
 import { ConfigService } from '@nestjs/config';
 import ms, { type StringValue } from 'ms';
 import { RolesService } from '../roles/roles.service.js';
+import { PermissionsService } from '../permissions/permissions.service.js';
 import type { AccessPayload } from './confirm_token/jwt.strategy.js';
 
 interface payloadUsers {
@@ -52,10 +53,11 @@ export class AuthService {
     private readonly redis: RedisService,
     private readonly config: ConfigService,
     private readonly rolesService: RolesService,
+    private readonly permissionsService: PermissionsService,
   ) {}
 
   // Access token mang theo role để guard biết vai trò mà không cần query DB.
-  // Danh sách quyền KHÔNG nằm trong token: PermissionsGuard tra theo role (để sửa ma trận có hiệu lực ngay).
+  // Danh sách quyền KHÔNG nằm trong token: PermissionsGuard tra theo role + quyền riêng (để sửa có hiệu lực ngay).
   private signAccessToken(user: payloadUsers): string {
     const payload: AccessPayload = {
       sub: user.id,
@@ -102,7 +104,8 @@ export class AuthService {
       role: role.key,
       roleName: role.name,
       scope: role.scope,
-      permissions: role.permissions,
+      // Quyền hiệu lực: quyền vai trò + cấp thêm − thu hồi riêng của người này
+      permissions: await this.permissionsService.getEffective(user.id, role.key),
     };
   }
 

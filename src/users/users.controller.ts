@@ -8,11 +8,10 @@ import { DeleteUsersDto } from "./dto/delete-users.dto.js";
 import { RequirePermissions } from "../auth/decorators/permissions.decorator.js";
 import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 import type { AuthUser } from "../auth/confirm_token/jwt.strategy.js";
-import { Permission } from "../common/types.js";
 
 // Cả controller: chỉ vai trò có quyền "Người dùng" (mặc định là ADMIN) mới gọi được
 @Controller('users')
-@RequirePermissions(Permission.USERS)
+@RequirePermissions('admin.users')
 export class UsersController {
     constructor(private readonly usersService: UsersService) {}
 

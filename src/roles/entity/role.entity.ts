@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryColumn, UpdateDateColumn } from 'typeorm';
-import { Permission, RoleKey } from '../../common/types.js';
+import { RoleKey, type Permission } from '../../common/types.js';
 
 /**
  * Một dòng = một vai trò + danh sách quyền của vai trò đó (một hàng của ma trận phân quyền).
