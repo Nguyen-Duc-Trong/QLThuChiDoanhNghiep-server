@@ -11,6 +11,12 @@ import { AuthModule } from './auth/auth.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { RolesModule } from './roles/roles.module.js';
 import { CategoriesModule } from './categories/categories.module.js';
+import { BudgetsModule } from './budgets/budgets.module.js';
+import { ExpensesModule } from './expenses/expenses.module.js';
+import { DepartmentModule } from './department/department.module.js';
+import { ApprovalsModule } from './approvals/approvals.module.js';
+import { PaymentsModule } from './payments/payments.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -31,6 +37,12 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     UsersModule,
     AuthModule,
     CategoriesModule,
+    BudgetsModule,
+    ExpensesModule,
+    DepartmentModule,
+    ApprovalsModule,
+    PaymentsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

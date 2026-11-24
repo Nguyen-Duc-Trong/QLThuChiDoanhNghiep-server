@@ -21,4 +21,9 @@ export class Users {
     // Vai trò quyết định quyền (bảng Roles). User cũ chưa có vai trò sẽ mặc định là Nhân viên.
     @Column({ type: 'enum', enum: RoleKey, default: RoleKey.NHAN_VIEN })
     role: RoleKey;
+
+    // Phòng ban (Departments.id). Yêu cầu chi lấy phòng đề nghị + dòng ngân sách theo cột này.
+    // Không khai báo quan hệ ManyToOne để tránh vòng import Users <-> Department (Department đã tham chiếu Users).
+    @Column({ type: 'uuid', nullable: true })
+    departmentId: string | null;
 }

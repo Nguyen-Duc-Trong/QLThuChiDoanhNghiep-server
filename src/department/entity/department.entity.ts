@@ -7,7 +7,6 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { DepartmentKey } from '../../common/types.js';
 import { Users } from '../../users/entity/users.entity.js';
 
 @Entity('Departments')
@@ -15,9 +14,9 @@ export class Department {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // Mã phòng ban (KE_TOAN, DEV...), mỗi mã chỉ có một phòng
-  @Column({ type: 'enum', enum: DepartmentKey, unique: true })
-  code: DepartmentKey;
+  // Mã phòng ban (KE_TOAN, DEV, MKT-2026...), duy nhất, lưu in hoa
+  @Column({ type: 'varchar', length: 30, unique: true })
+  code: string;
 
   @Column({ type: 'varchar', length: 255, unique: true })
   name: string;

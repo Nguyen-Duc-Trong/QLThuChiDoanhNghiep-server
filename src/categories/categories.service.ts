@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Categories } from './entity/categories.entity.js';
 import { Users } from '../users/entity/users.entity.js';
+import { BudgetLine } from '../budgets/entity/budget-line.entity.js';
+import { ExpenseRequest } from '../expenses/entity/expense-request.entity.js';
 import { PaginatedResult, paginate } from '../common/response.js';
 import { CreateCategoriesDto } from './dto/create_categories.dto.js';
 import {
@@ -22,6 +24,8 @@ export type CategoryListItem = Categories & {
   typeLabel: string;
   statusLabel: string;
   updatedByName: string | null;
+  // Số bản ghi đang tham chiếu (yêu cầu chi + dòng ngân sách). > 0 thì không xóa được, chỉ ngừng sử dụng.
+  usage: number;
 };
 
 @Injectable()
@@ -50,6 +54,29 @@ export class CategoriesService {
         select: { id: true, username: true },
       });
     return new Map(users.map((u) => [u.id, u.username]));
+  }
+
+  /**
+   * id danh mục -> số bản ghi đang dùng (yêu cầu chi + dòng ngân sách).
+   * Khi có module Thu thì cộng thêm khoản thu ở đây.
+   */
+  private async countUsage(ids: string[]): Promise<Map<string, number>> {
+    const usage = new Map<string, number>();
+    if (ids.length === 0) return usage;
+    const manager = this.categoriesRepository.manager;
+    const count = (entity: typeof ExpenseRequest | typeof BudgetLine, alias: string) =>
+      manager
+        .createQueryBuilder(entity, alias)
+        .select(`${alias}.categoryId`, 'categoryId')
+        .addSelect('COUNT(*)::int', 'count')
+        .where(`${alias}.categoryId IN (:...ids)`, { ids })
+        .groupBy(`${alias}.categoryId`)
+        .getRawMany<{ categoryId: string; count: number }>();
+    const groups = await Promise.all([count(ExpenseRequest, 'e'), count(BudgetLine, 'b')]);
+    for (const row of groups.flat()) {
+      usage.set(row.categoryId, (usage.get(row.categoryId) ?? 0) + Number(row.count));
+    }
+    return usage;
   }
 
   async createCategories(
@@ -155,12 +182,16 @@ export class CategoriesService {
         .take(limit)
         .getManyAndCount();
 
-      const names = await this.findUserNames(items.map((c) => c.updatedBy));
+      const [names, usage] = await Promise.all([
+        this.findUserNames(items.map((c) => c.updatedBy)),
+        this.countUsage(items.map((c) => c.id)),
+      ]);
       const rows: CategoryListItem[] = items.map((c) => ({
         ...c,
         typeLabel: CATEGORY_TYPE_LABEL[c.type] ?? c.type,
         statusLabel: CATEGORY_STATUS_LABEL[c.status] ?? c.status,
         updatedByName: c.updatedBy ? (names.get(c.updatedBy) ?? null) : null,
+        usage: usage.get(c.id) ?? 0,
       }));
       return paginate(rows, total, page, limit);
     } catch (error) {
@@ -182,6 +213,16 @@ export class CategoriesService {
       const existing = await this.categoriesRepository.findBy({ id: In(uniqueIds) });
       const existingIds = existing.map((c) => c.id);
       const notFoundIds = uniqueIds.filter((id) => !existingIds.includes(id));
+
+      // Danh mục đã có giao dịch / ngân sách tham chiếu thì không xóa (giữ lịch sử, báo cáo), chỉ ngừng sử dụng
+      const usage = await this.countUsage(existingIds);
+      const inUse = existing.filter((c) => (usage.get(c.id) ?? 0) > 0);
+      if (inUse.length > 0) {
+        throw new ConflictException(
+          `Không thể xóa danh mục đang được sử dụng: ${inUse.map((c) => `${c.code} (${usage.get(c.id)} bản ghi)`).join(', ')}. Hãy chuyển sang "Ngừng sử dụng"`,
+        );
+      }
+
       if (existing.length > 0) {
         await this.categoriesRepository.delete(existingIds);
       }

@@ -8,6 +8,7 @@ import { DeleteUsersDto } from "./dto/delete-users.dto.js";
 import { RequirePermissions } from "../auth/decorators/permissions.decorator.js";
 import { CurrentUser } from "../auth/decorators/current-user.decorator.js";
 import type { AuthUser } from "../auth/confirm_token/jwt.strategy.js";
+import { EmitsWorkflowChange } from "../notifications/workflow-change.js";
 
 // Cả controller: chỉ vai trò có quyền "Người dùng" (mặc định là ADMIN) mới gọi được
 @Controller('users')
@@ -15,18 +16,21 @@ import type { AuthUser } from "../auth/confirm_token/jwt.strategy.js";
 export class UsersController {
     constructor(private readonly usersService: UsersService) {}
 
+    @EmitsWorkflowChange('user.create')
     @Post()
     @ResponseMessage('Tạo người dùng thành công')
     create(@Body() dto: CreateUsersDto) {
         return this.usersService.createUser(dto);
     }
 
+    @EmitsWorkflowChange('user.update')
     @Put()
     @ResponseMessage('Cập nhật người dùng thành công')
     update(@Body() dto: UpdateUsersDto, @CurrentUser() actor: AuthUser) {
         return this.usersService.updateUser(dto, actor.userId);
     }
 
+    @EmitsWorkflowChange('user.delete')
     @Delete()
     @ResponseMessage('Xóa người dùng thành công')
     delete(@Body() dto: DeleteUsersDto, @CurrentUser() actor: AuthUser) {

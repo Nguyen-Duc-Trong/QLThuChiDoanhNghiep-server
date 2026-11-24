@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import type { AuthUser } from '../auth/confirm_token/jwt.strategy.js';
 import { PermissionsService } from './permissions.service.js';
 import { UpdateUserPermissionsDto } from './dto/update-user-permissions.dto.js';
+import { EmitsWorkflowChange } from '../notifications/workflow-change.js';
 
 @Controller()
 export class PermissionsController {
@@ -32,6 +33,7 @@ export class PermissionsController {
     return this.permissionsService.getUserPermissions(id);
   }
 
+  @EmitsWorkflowChange('user.permissions')
   @Put('users/:id/permissions')
   @RequirePermissions('admin.roles')
   @ResponseMessage('Cập nhật quyền riêng thành công')

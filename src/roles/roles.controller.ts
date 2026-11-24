@@ -4,6 +4,7 @@ import { UpdateRolePermissionsDto } from './dto/update-role-permissions.dto.js';
 import { ResponseMessage } from '../common/response.js';
 import { RequireAnyPermission, RequirePermissions } from '../auth/decorators/permissions.decorator.js';
 import { RoleKey } from '../common/types.js';
+import { EmitsWorkflowChange } from '../notifications/workflow-change.js';
 
 @Controller('roles')
 export class RolesController {
@@ -17,6 +18,7 @@ export class RolesController {
     return this.rolesService.findAll();
   }
 
+  @EmitsWorkflowChange('role.permissions')
   @Put(':key/permissions')
   @RequirePermissions('admin.roles')
   @ResponseMessage('Cập nhật quyền thành công')

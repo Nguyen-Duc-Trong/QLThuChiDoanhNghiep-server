@@ -10,10 +10,14 @@ import {
   Logger,
   NestInterceptor,
   SetMetadata,
+  StreamableFile,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request, Response } from 'express';
 import { Observable, map } from 'rxjs';
+
+// Metadata @Sse() gắn lên handler (hằng SSE_METADATA của @nestjs/common, không export qua entry chính)
+const SSE_METADATA = '__sse__';
 
 /**
  * Định dạng response chung cho toàn bộ API.
@@ -74,6 +78,10 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
   constructor(private readonly reflector: Reflector) {}
 
   intercept(context: ExecutionContext, next: CallHandler<T>): Observable<ApiResponse<T>> {
+    // Route @Sse(): mỗi phần tử là một MessageEvent, giữ nguyên (không bọc ApiResponse)
+    if (this.reflector.get<boolean>(SSE_METADATA, context.getHandler())) {
+      return next.handle() as unknown as Observable<ApiResponse<T>>;
+    }
     const http = context.switchToHttp();
     const request = http.getRequest<Request>();
     const response = http.getResponse<Response>();
@@ -84,6 +92,8 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
 
     return next.handle().pipe(
       map((result) => {
+        // Trả file (ủy nhiệm chi...) thì giữ nguyên luồng dữ liệu
+        if (result instanceof StreamableFile) return result as unknown as ApiResponse<T>;
         const base = {
           success: true,
           statusCode: response.statusCode,
